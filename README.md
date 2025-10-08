@@ -1,97 +1,191 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 실전처럼 요튜브 Clone 만들어보기
 
-# Getting Started
+React Native를 활용하여 YouTube 인기 동영상 목록을 보여주는 모바일 애플리케이션입니다. 
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 프로젝트 개요
 
-## Step 1: Start Metro
+이 프로젝트는 다음과 같은 실무 개발 프로세스를 따라 진행되었습니다:
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+1. **기획서 검토** - 요구사항 분석 및 기능 정의
+2. **YouTube Data API v3 조사** - API 스펙 확인 및 활용 방안 검토
+3. **네트워크 라이브러리 선택** - Axios vs Fetch 비교 분석
+4. **API 연동 구현** - YouTube 인기 동영상 데이터 호출
+5. **무한 스크롤 구현** - 페이지네이션을 활용한 UX 최적화
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## 주요 기능
 
-```sh
-# Using npm
-npm start
+### 인기 동영상 목록
+- YouTube Data API v3를 통해 실시간 인기 동영상 데이터 가져오기
+- 한국(KR) 지역 기준 인기 차트 표시
+- 동영상 썸네일, 제목, 채널명, 조회수, 게시일 정보 제공
 
-# OR using Yarn
-yarn start
+### 무한 스크롤 (Infinity Scroll)
+- `FlatList`의 `onEndReached` 이벤트를 활용한 자동 데이터 로딩
+- `pageToken`을 이용한 페이지네이션 구현
+- `hasNextPage` 상태로 추가 데이터 존재 여부 관리
+- 스크롤 시 자연스러운 데이터 추가 로딩
+
+## 기술 스택
+
+- **React Native** `0.81.4` - 크로스 플랫폼 모바일 앱 프레임워크
+- **React** `19.1.0` - UI 라이브러리
+- **TypeScript** `5.8.3` - 타입 안정성을 위한 정적 타입 언어
+
+### 네트워크
+- **Axios** `1.12.2` - HTTP 클라이언트
+  - **Fetch 대비 장점**:
+    - 자동 JSON 변환
+    - 요청/응답 인터셉터 지원
+    - 요청 취소 기능
+    - 더 나은 에러 핸들링
+    - baseURL 설정으로 코드 간결화
+
+### API
+- **YouTube Data API v3** - Google 제공 공식 YouTube 데이터 API
+  - `videos` 엔드포인트 활용
+  - `snippet`, `contentDetails`, `statistics` 파트 조회
+
+### 상태 관리
+- **React Hooks** - useState, useCallback을 활용한 상태 관리
+- **Custom Hook** - 비즈니스 로직 분리 (useYotubeData)
+
+### 환경 변수 관리(강의 외 추가 코드)
+- **react-native-dotenv** `3.4.11` - 환경 변수 관리
+  - `.env` 파일로 API 키 보안 관리
+  - Babel 플러그인을 통한 빌드 타임 주입
+
+## 프로젝트 구조
+
+```
+yotube/
+├── src/
+│   ├── components/           # UI 컴포넌트
+│   │   ├── ListView.tsx      # 메인 리스트 뷰 (FlatList 구현)
+│   │   └── ListItemView.tsx  # 개별 동영상 아이템 컴포넌트
+│   ├── hooks/                # Custom Hooks
+│   │   ├── useYotubeData.ts  # YouTube API 데이터 관리 훅
+│   │   └── TypeVideoResults.ts # API 응답 타입 정의
+│   └── model/                # 타입 정의
+│       └── TypeListItem.ts   # 리스트 아이템 타입
+├── android/                  # Android 네이티브 코드
+├── ios/                      # iOS 네이티브 코드
+├── App.tsx                   # 앱 진입점
+├── .env                      # 환경 변수 (API 키)
+├── babel.config.js           # Babel 설정
+├── tsconfig.json             # TypeScript 설정
+└── package.json              # 프로젝트 의존성
 ```
 
-## Step 2: Build and run your app
+### 핵심 컴포넌트 설명
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+#### `useYotubeData` Hook
+```ts
+// YouTube API 데이터 로딩 및 무한 스크롤 로직 관리
+const { data, loadData, loadMoreData } = useYotubeData();
+```
+- **data**: 동영상 목록 상태
+- **loadData**: 초기 데이터 로딩 함수
+- **loadMoreData**: 추가 데이터 로딩 함수 (무한 스크롤)
+- **nextPageToken**: 페이지네이션 토큰 관리
+- **hasNextPage**: 다음 페이지 존재 여부
 
-### Android
+#### `ListView` Component
+```tsx
+// FlatList를 활용한 리스트 렌더링
+<FlatList
+  data={data}
+  renderItem={({ item }) => <ListItemView {...item} />}
+  onEndReached={loadMoreData}  // 무한 스크롤 구현
+  onEndReachedThreshold={0.1}  // 하단 10% 도달 시 트리거(onEndReached)
+  ListFooterComponent={<LoadingIndicator />} // 강의 외 추가코드
+/>
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+#### `ListItemView` Component
+- 동영상 썸네일, 제목, 채널명, 조회수, 게시일 표시
+- YouTube 스타일의 리스트 아이템 UI 구현
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+#### 2. 환경 변수 설정
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+프로젝트 루트에 `.env` 파일을 생성하고 YouTube API 키를 추가합니다:
 
-```sh
-bundle install
+```bash
+YOTUBE_API_KEY=YOUR_YOUTUBE_API_KEY_HERE
 ```
 
-Then, and every time you update your native dependencies, run:
+## 🔧 주요 구현 내용
 
-```sh
-bundle exec pod install
+### 1. Axios 인스턴스 설정
+
+```typescript
+const axiosInstance = axios.create({
+  baseURL: 'https://www.googleapis.com/youtube/v3/',
+  timeout: 10000, // 10초 타임아웃
+  params: {
+    // 정적인 파라미터들을 기본값으로 설정
+    part: 'snippet, contentDetails, statistics',
+    chart: 'mostPopular',
+    regionCode: 'KR',
+    key: YOTUBE_API_KEY,
+  },
+});
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+**장점**:
+- `baseURL`: 모든 요청에서 반복되는 URL 제거
+- `timeout`: 요청 타임아웃 설정으로 응답 없는 경우 자동 중단
+- `params`: 정적인 쿼리 파라미터를 기본값으로 설정하여 코드 중복 제거
+- 이제 API 호출 시 동적인 파라미터(`pageToken` 등)만 전달하면 됨
 
-```sh
-# Using npm
-npm run ios
+### 2. 무한 스크롤 구현
 
-# OR using Yarn
-yarn ios
+```typescript
+const [hasNextPage, setHasNextPage] = useState(true);
+const [nextPageToken, setNextPageToken] = useState<NextPageToken>(null);
+
+// 초기 데이터 로딩 - 파라미터 전달 불필요 (axios.create에서 설정)
+const loadData = useCallback(async () => {
+  const videoResults = await axiosInstance.get<TypeVideoResults>('/videos');
+  setData(/* 데이터 매핑 */);
+}, []);
+
+// 추가 데이터 로딩 - 동적인 pageToken만 전달
+const loadMoreData = useCallback(async () => {
+  if (!hasNextPage) return;
+  
+  const videoResults = await axiosInstance.get('/videos', {
+    params: {
+      pageToken: nextPageToken,  // 동적인 파라미터만 전달
+    },
+  });
+  
+  // 기존 데이터에 새 데이터 추가
+  setData(prevData => prevData.concat(newData));
+}, [hasNextPage, nextPageToken]);
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+**핵심 포인트**:
+- `axios.create`에 정적 파라미터를 설정했으므로 API 호출 시 코드가 매우 간결함
+- 동적인 `pageToken`만 필요할 때 전달
+- axios가 자동으로 기본 params와 요청별 params를 병합
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+### 3. 환경 변수 보안 처리
 
-## Step 3: Modify your app
+```js
+// babel.config.js
+plugins: [
+  [
+    'module:react-native-dotenv',
+    {
+      moduleName: '@env',
+      path: '.env',
+    },
+  ],
+]
 
-Now that you have successfully run the app, let's make changes!
+// 사용
+import { YOTUBE_API_KEY } from '@env';
+```
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+API 키를 코드에 직접 노출하지 않고 환경 변수로 관리합니다.

@@ -12,7 +12,6 @@ type NextPageToken = string | null;
 
 const useYotubeData = () => {
   const [data, setData] = useState<TypeListItem[]>([]);
-  // inifinity scroll을 구현할거야.
   const [hasNextPage, setHasNextPage] = useState(true);
   const [nextPageToken, setNextPageToken] = useState<NextPageToken>(null);
 
