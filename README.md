@@ -8,9 +8,14 @@ React Native를 활용하여 YouTube 인기 동영상 목록을 보여주는 모
 
 1. **기획서 검토** - 요구사항 분석 및 기능 정의
 2. **YouTube Data API v3 조사** - API 스펙 확인 및 활용 방안 검토
-3. **네트워크 라이브러리 선택** - Axios vs Fetch 비교 분석
+3. **네트워크 라이브러리 선택** - Axios vs Fetch 비교 분
 4. **API 연동 구현** - YouTube 인기 동영상 데이터 호출
 5. **무한 스크롤 구현** - 페이지네이션을 활용한 UX 최적화
+
+## 화면
+|Home|
+|-|
+|<img src="./screenshot/home_1.png" width="300" />|
 
 ## 주요 기능
 
@@ -27,9 +32,9 @@ React Native를 활용하여 YouTube 인기 동영상 목록을 보여주는 모
 
 ## 기술 스택
 
-- **React Native** `0.81.4` - 크로스 플랫폼 모바일 앱 프레임워크
-- **React** `19.1.0` - UI 라이브러리
-- **TypeScript** `5.8.3` - 타입 안정성을 위한 정적 타입 언어
+- **React Native** `0.81.4`
+- **React** `19.1.0` 
+- **TypeScript** `5.8.3`
 
 ### 네트워크
 - **Axios** `1.12.2` - HTTP 클라이언트
@@ -51,8 +56,11 @@ React Native를 활용하여 YouTube 인기 동영상 목록을 보여주는 모
 
 ### 환경 변수 관리(강의 외 추가 코드)
 - **react-native-dotenv** `3.4.11` - 환경 변수 관리
+  
   - `.env` 파일로 API 키 보안 관리
   - Babel 플러그인을 통한 빌드 타임 주입
+  
+  
 
 ## 프로젝트 구조
 
@@ -91,13 +99,14 @@ const { data, loadData, loadMoreData } = useYotubeData();
 
 #### `ListView` Component
 ```tsx
+const loadingIndicator = isLoading ? <LoadingIndicator /> : null;
 // FlatList를 활용한 리스트 렌더링
 <FlatList
   data={data}
   renderItem={({ item }) => <ListItemView {...item} />}
   onEndReached={loadMoreData}  // 무한 스크롤 구현
   onEndReachedThreshold={0.1}  // 하단 10% 도달 시 트리거(onEndReached)
-  ListFooterComponent={<LoadingIndicator />} // 강의 외 추가코드
+  ListFooterComponent={loadingIndicator} // 강의 외 추가코드
 />
 
 ```
@@ -106,57 +115,40 @@ const { data, loadData, loadMoreData } = useYotubeData();
 - 동영상 썸네일, 제목, 채널명, 조회수, 게시일 표시
 - YouTube 스타일의 리스트 아이템 UI 구현
 
-#### 2. 환경 변수 설정
-
-프로젝트 루트에 `.env` 파일을 생성하고 YouTube API 키를 추가합니다:
-
-```bash
-YOTUBE_API_KEY=YOUR_YOUTUBE_API_KEY_HERE
-```
-
-## 🔧 주요 구현 내용
+## 주요 구현 내용
 
 ### 1. Axios 인스턴스 설정
 
 ```typescript
 const axiosInstance = axios.create({
   baseURL: 'https://www.googleapis.com/youtube/v3/',
-  timeout: 10000, // 10초 타임아웃
-  params: {
-    // 정적인 파라미터들을 기본값으로 설정
-    part: 'snippet, contentDetails, statistics',
-    chart: 'mostPopular',
-    regionCode: 'KR',
-    key: YOTUBE_API_KEY,
-  },
 });
 ```
-
-**장점**:
-- `baseURL`: 모든 요청에서 반복되는 URL 제거
-- `timeout`: 요청 타임아웃 설정으로 응답 없는 경우 자동 중단
-- `params`: 정적인 쿼리 파라미터를 기본값으로 설정하여 코드 중복 제거
-- 이제 API 호출 시 동적인 파라미터(`pageToken` 등)만 전달하면 됨
 
 ### 2. 무한 스크롤 구현
 
 ```typescript
 const [hasNextPage, setHasNextPage] = useState(true);
-const [nextPageToken, setNextPageToken] = useState<NextPageToken>(null);
+const [nextPageToken, setNextPageToken] = useState<NextPageToken>(null); // 강의 외 추가 구현
 
-// 초기 데이터 로딩 - 파라미터 전달 불필요 (axios.create에서 설정)
+// 초기 데이터 로딩
 const loadData = useCallback(async () => {
-  const videoResults = await axiosInstance.get<TypeVideoResults>('/videos');
+  const videoResults = await axiosInstance.get<TypeVideoResults>('/videos', { // 강의 외 추가 구현
+    params: {
+      ...DEFAULT_PARAMS // 강의 외 추가 구현
+    },    
+  });
   setData(/* 데이터 매핑 */);
 }, []);
 
-// 추가 데이터 로딩 - 동적인 pageToken만 전달
+// 추가 데이터 로딩
 const loadMoreData = useCallback(async () => {
-  if (!hasNextPage) return;
+	if (!hasNextPage || isLoading) return; // 이미 로딩 중이면 중복 호출 방지
   
   const videoResults = await axiosInstance.get('/videos', {
     params: {
-      pageToken: nextPageToken,  // 동적인 파라미터만 전달
+			...DEFAULT_PARAMS
+      pageToken: nextPageToken,
     },
   });
   
@@ -164,28 +156,3 @@ const loadMoreData = useCallback(async () => {
   setData(prevData => prevData.concat(newData));
 }, [hasNextPage, nextPageToken]);
 ```
-
-**핵심 포인트**:
-- `axios.create`에 정적 파라미터를 설정했으므로 API 호출 시 코드가 매우 간결함
-- 동적인 `pageToken`만 필요할 때 전달
-- axios가 자동으로 기본 params와 요청별 params를 병합
-
-### 3. 환경 변수 보안 처리
-
-```js
-// babel.config.js
-plugins: [
-  [
-    'module:react-native-dotenv',
-    {
-      moduleName: '@env',
-      path: '.env',
-    },
-  ],
-]
-
-// 사용
-import { YOTUBE_API_KEY } from '@env';
-```
-
-API 키를 코드에 직접 노출하지 않고 환경 변수로 관리합니다.

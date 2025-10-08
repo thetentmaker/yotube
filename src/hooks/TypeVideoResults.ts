@@ -1,6 +1,7 @@
 type TypeVideoResults = {
     kind: 'youtube#videoListResponse';
     etag: string;
+    id: string;
     nextPageToken: string;
     prevPageToken: string;
     pageInfo: {

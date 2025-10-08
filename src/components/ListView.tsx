@@ -5,19 +5,20 @@ import useYotubeData from '../hooks/useYotubeData';
 import LoadingIndicator from './LoadingIndicator';
 
 const ListView = () => {
-  const { data, loadData, loadMoreData } = useYotubeData();
+  const { data, loadData, loadMoreData, isLoading } = useYotubeData();
   useEffect(() => {
     loadData();
   }, [loadData]);
+  const loadingIndicator = isLoading ? <LoadingIndicator /> : null;
   return (
     <FlatList
       data={data}
       renderItem={({ item }) => <ListItemView {...item} />}
-      keyExtractor={item => item.thumbnail}
+      keyExtractor={item => item.id}
       style={styles.container}
       onEndReached={loadMoreData}
       onEndReachedThreshold={0.1}
-      ListFooterComponent={<LoadingIndicator />}
+      ListFooterComponent={loadingIndicator}
     />
   );
 };

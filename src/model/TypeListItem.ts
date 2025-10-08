@@ -1,4 +1,5 @@
 type TypeListItem = {
+  id: string;
   title: string;
   thumbnail: string;
   publishedAt: string;
