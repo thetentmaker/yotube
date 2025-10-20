@@ -156,3 +156,23 @@ const loadMoreData = useCallback(async () => {
   setData(prevData => prevData.concat(newData));
 }, [hasNextPage, nextPageToken]);
 ```
+
+## 추가학습
+
+### Spread Operator vs Object Props
+
+```tsx
+// 방법 1: 스프레드 연산자 (현재 사용)
+renderItem={({ item }) => <ListItemView {...item} />}
+
+// 방법 2: 객체 전체 전달
+renderItem={({ item }) => <ListItemView item={item} />}
+```
+
+**`{...item}`**: 객체의 모든 속성을 개별 props로 펼쳐서 전달
+- `<ListItemView thumbnail="url" title="제목" ... />` 와 동일
+- 컴포넌트에서 개별 props로 받음: `({ thumbnail, title })`
+
+**`item={item}`**: 객체 전체를 하나의 prop으로 전달
+- 컴포넌트에서 `item.속성명`으로 접근해야 함
+- 구조 변경 필요: `({ item }) => <Text>{item.title}</Text>`
