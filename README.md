@@ -174,5 +174,92 @@ renderItem={({ item }) => <ListItemView item={item} />}
 - 컴포넌트에서 개별 props로 받음: `({ thumbnail, title })`
 
 **`item={item}`**: 객체 전체를 하나의 prop으로 전달
+
 - 컴포넌트에서 `item.속성명`으로 접근해야 함
 - 구조 변경 필요: `({ item }) => <Text>{item.title}</Text>`
+
+
+
+## TypeScript에서 Interface와 Type을 혼용할 수 있는 이유
+
+![](/Users/jaeho/Documents/workspace_rn/yotube/screenshot/ts_to_js.png)
+
+### 1. 구조적 타이핑 (Structural Typing)
+
+TypeScript는 **이름이 아닌 구조(형태)**로 타입 호환성을 판단합니다.
+
+typescript
+
+```typescript
+interface Person {
+  name: string;
+  age: number;
+}
+
+type User = {
+  name: string;
+  age: number;
+}
+
+// 이름은 다르지만 구조가 같으면 호환됨
+const person: Person = { name: "John", age: 30 };
+const user: User = person; // ✅ 가능!
+```
+
+### 2. 컴파일러의 동일한 처리
+
+TypeScript 컴파일러는 `interface`와 `type`을 내부적으로 **동일한 구조**로 변환합니다.
+
+typescript
+
+```typescript
+interface IUser { name: string; }
+type TUser = { name: string; }
+
+// 컴파일러 내부에서는 둘 다 → { name: string }
+```
+
+### 3. 런타임에는 모두 사라짐
+
+컴파일 후 모든 타입 정보가 제거되므로, **성능 차이나 런타임 영향이 전혀 없습니다**.
+
+typescript
+
+```typescript
+// TypeScript
+function greet(user: IUser): void {
+  console.log(user.name);
+}
+
+// 컴파일 후 JavaScript
+function greet(user) {
+  console.log(user.name);
+}
+```
+
+### 4. 자유로운 확장과 조합
+
+typescript
+
+```typescript
+interface BaseProps {
+  id: number;
+}
+
+type WithName = {
+  name: string;
+}
+
+// Interface + Type 혼용
+type UserProps = BaseProps & WithName;
+// 결과: { id: number; name: string; }
+```
+
+### 핵심 요약
+
+1. **구조적 타이핑**: 구조만 같으면 호환 가능
+2. **동일한 내부 처리**: 컴파일러가 둘을 같게 취급
+3. **런타임 제거**: 컴파일 후 모두 사라져 성능 영향 없음
+4. **자유로운 조합**: 상황에 맞게 혼용 가능
+
+→ **결론**: 구조가 모든 것을 결정하므로 혼용 가능!
